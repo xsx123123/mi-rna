@@ -1,0 +1,370 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+print('''
+本脚本的作用就是提取在sam文件中基因是成簇出现的python脚本
+author：xsx123123
+███████╗██╗  ██╗ █████╗ ███╗   ██╗ ██████╗          ██╗ █████╗ ██╗███╗   ██╗
+╚══███╔╝██║  ██║██╔══██╗████╗  ██║██╔════╝          ██║██╔══██╗██║████╗  ██║
+  ███╔╝ ███████║███████║██╔██╗ ██║██║  ███╗         ██║███████║██║██╔██╗ ██║
+ ███╔╝  ██╔══██║██╔══██║██║╚██╗██║██║   ██║    ██   ██║██╔══██║██║██║╚██╗██║
+███████╗██║  ██║██║  ██║██║ ╚████║╚██████╔╝    ╚█████╔╝██║  ██║██║██║ ╚████║
+╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝      ╚════╝ ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝
+''')
+
+import sys
+import os
+
+
+#对文件中有多少个待处理的对象进行一个统计
+def num_MIRNA(myfile):
+    num_mirna = len(myfile.readlines())
+    return num_mirna
+
+
+#将在文件中的每一行单独加入到一个列表中
+def file_list(file):
+    convert_File = open(file, "r+")
+    result = []
+    i = -1
+    for line in convert_File:
+        i += 1
+        result_1 = []
+        line_deal = line.split("\t")
+        line_name = line_deal[0]
+        line_chr = line_deal[2]
+        line_chr_id = line_chr[7]
+        if line_chr_id in ["0"]:
+            line_chr_id_1 = line_chr[8]
+        else:
+            line_chr_id_1 = line_chr[7:]
+        line_star = line_deal[3]
+        line_length = len(line_deal[4])
+        line_end = eval(line_star) + line_length
+        result_1.append(i)
+        result_1.append(line_name)
+        result_1.append(line_chr_id_1)
+        result_1.append(line_star)
+        result_1.append(line_end)
+        result.append(result_1)
+    convert_File.close()
+    return result
+
+#这里是定义了一个对Sam文件中的染色体的id进行一个提取的函数
+def MIRNA_CHR_ID(line):
+    line_id_1 = line[1]
+    line_id = line_id_1[7]
+    if line_id in ["0"]:
+        line_chr_id = line_id_1[8]
+    else:
+        line_chr_id = line_id_1[7:]
+    return line_chr_id
+
+#导出MIRNA开始的位置
+def MIRNA_STAR(line):
+    mirna_star = line[3]
+    mirna_star_1 = eval(mirna_star)
+    return mirna_star_1
+
+#导出MIRNA结束的位置
+def MIRNA_END(line):
+    mirna_end = line[4]
+    mirna_end_1 = eval(mirna_end)
+    return mirna_end_1
+
+#定义MIRNA簇的范围函数
+def MIRNA_STAR_5kd(line):
+    mirna_star = line[3]
+    mirna_star_1 = str(mirna_star)
+    mirna_star_5kd = eval(mirna_star_1) - 5000
+    return mirna_star_5kd
+
+#定义MIRNA簇的范围函数
+def MIRNA_END_5kd(line):
+    mirna_end = line[4]
+    mirna_end_1 = str(mirna_end)
+    mirna_end_5kd = eval(mirna_end_1) + 5000
+    return mirna_end_5kd
+
+def MIRNA_id(line):
+    mirna_id = line[0]
+    return mirna_id
+
+
+#这个是一个将可能成簇的数据给提取出来的函数
+def file_deal(temp_File, new_extension_name):
+    deaL_File_ori = open(temp_File, "r+")
+    convert_finish_fold = open(new_extension_name, "w+", newline="")
+    for line in deaL_File_ori:
+        line_split = line.split("\t")
+        line_2 = line_split[1]
+        if line_2 in ['\n']:
+            1 == True
+        else:
+            line_1 = line[0:-1]
+            convert_finish_fold.writelines(line_1)
+            convert_finish_fold.writelines("\n")
+    deaL_File_ori.close()
+    convert_finish_fold.close()
+
+#删除文件的函数
+def remove(temp_file_name):
+    os.remove(temp_file_name)
+    print("{}缓存文件已删除".format(temp_file_name))
+
+#这是一个判断一个字符串是否为数字的函数
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        pass
+
+    try:
+        import unicodedata
+        unicodedata.numeric(s)
+        return True
+    except (TypeError, ValueError):
+        pass
+
+    return False
+
+
+#按照生成的列表将从生成的数据从处理完的列表中将MIRNA的star与end提取出来
+def extract(new_extension_name, line_list, extract_file_name):
+    ori_File = open(new_extension_name, "r+")
+    extract_file = open(extract_file_name, "w+", newline="")
+    for lines in ori_File:
+        line = lines.split("\t")
+        n = 0
+        for i in line:
+            n += 1
+            if is_number(i) == True:
+                i_deal = int(i)
+                factor = line_list[i_deal]
+                factor_deal_chr = factor[2]
+                factor_deal_star = factor[3]
+                factor_deal_end = factor[4]
+                factor_deal_end_1 = str(factor_deal_end)
+                if n not in [1]:
+                    extract_file.writelines(factor_deal_star)
+                    extract_file.writelines("\t")
+                    extract_file.writelines(factor_deal_end_1)
+                    extract_file.writelines("\t")
+                else:
+                    extract_file.writelines(factor_deal_chr)
+                    extract_file.writelines("\t")
+                    extract_file.writelines(factor_deal_star)
+                    extract_file.writelines("\t")
+                    extract_file.writelines(factor_deal_end_1)
+                    extract_file.writelines("\t")
+        extract_file.writelines("\n")
+    ori_File.close()
+    extract_file.close()
+
+
+
+#对提取到的数据的文件进行一个处理已得到每个簇的范围
+def cluter(extract_file_name, cluter_file_name):
+    ext_File = open(extract_file_name, "r+")
+    cluter_file = open(cluter_file_name, "w+", newline="")
+    for lines in ext_File:
+        if len(lines) > 1:
+            line = lines.split("\t")
+            line_deal = line[1:-1]
+            line_length = int(len(line_deal)/2)
+            line_length_str = str(line_length)
+            line_max = max(line_deal)
+            line_min = min(line_deal)
+            line_chr = line[0]
+        cluter_file.writelines(line_chr)
+        cluter_file.writelines("\t")
+        cluter_file.writelines(line_length_str)
+        cluter_file.writelines("\t")
+        cluter_file.writelines(line_min)
+        cluter_file.writelines("\t")
+        cluter_file.writelines(line_max)
+        cluter_file.writelines("\n")
+    ext_File.close()
+    cluter_file.close()
+
+def de_dup(cluter_file_name, de_dup_file_name):
+    cluter_File = open(cluter_file_name, "r+")
+    de_dup_file = open(de_dup_file_name, "w+", newline="")
+    list_cluter = []
+    for line in cluter_File:
+        result_1 = []
+        line_factor = line.split("\t")
+        line_chr = line_factor[0]
+        line_num = line_factor[1]
+        line_min = line_factor[2]
+        line_max = line_factor[3]
+        line_max_1 = line_max[0:-1]
+        result_1.append(line_chr)
+        result_1.append(line_num)
+        result_1.append(line_min)
+        result_1.append(line_max_1)
+        list_cluter.append(result_1)
+    de_dup = []
+    for i in list_cluter:
+        if i not in de_dup:
+            de_dup.append(i)
+    for line in de_dup:
+        line_chr = line[0]
+        line_num = line[1]
+        line_star = line[2]
+        line_end = line[3]
+        de_dup_file.writelines(line_chr)
+        de_dup_file.writelines("\t")
+        de_dup_file.writelines(line_num)
+        de_dup_file.writelines("\t")
+        de_dup_file.writelines(line_star)
+        de_dup_file.writelines("\t")
+        de_dup_file.writelines(line_end)
+        de_dup_file.writelines("\n")
+    cluter_File.close()
+    de_dup_file.close()
+
+
+#下面的这个函数就是生成一个簇组成成分的具体内容的函数
+def cluter_id_ex(new_extension_name, line_list,  cluter_id_file):
+    cluter_File = open(new_extension_name, "r+")
+    cluter_id_file_name = open(cluter_id_file, "w+", newline="")
+    i_content_list =[]
+    for line in cluter_File:
+        content_list = []
+        line_1 = line.split("\t")
+        line_2 = line_1[0:-1]
+        for i in line_2:
+            content_list.append(i)
+            i_content_list.append(content_list)
+    content_deal = []
+    for i in i_content_list:
+        if i not in content_deal:
+            content_deal.append(i)
+    for i in content_deal:
+        for i_content in i:
+            i_content_1 = int(i_content)
+            i_content_1_content = line_list[i_content_1]
+            i_content_1_content_name = i_content_1_content[1]
+            i_content_1_content_chr = i_content_1_content[2]
+            cluter_id_file_name.writelines(i_content_1_content_name)
+            cluter_id_file_name.writelines("\t")
+            cluter_id_file_name.writelines(i_content_1_content_chr)
+            cluter_id_file_name.writelines("\t")
+        cluter_id_file_name.writelines("\n")
+    cluter_File.close()
+    cluter_id_file_name.close()
+
+def note_1(de_dup_file_name):
+    print("{}文件为从Sam对比文件中提取得到的为多个MNRNA位点距离小于5kd的簇文件".format(de_dup_file_name))
+    print("文件中第一列为MNRNA簇所在的染色体位置")
+    print("文件中第二列为该MNRNA簇为几个MNRNA组合而成")
+    print("文件中第三列为该MNRNA簇的起始位置")
+    print("文件中第四列为该MNRNA簇的结束位置")
+
+
+def note_2(cluter_id_file):
+    print("{}文件为从Sam对比文件中提取得到的MNRNA簇相关的MNRNA的具体信息".format(cluter_id_file))
+    print("每个MNRNA信息主要由两部分组成，第一部分为MNRNA的家族，第二部分为MNRNA所在的染色体")
+
+
+#下面的是一个主函数
+def main():
+
+    # 显示当前目录，同时通过输入目录切换目录
+    retval = os.getcwd()
+    print("当前工作目录为 %s" % (retval))
+    path = input("请输入待处理文件的目录")
+    os.chdir(path)
+    retval = os.getcwd()
+    print("目录修改成功 %s" % (retval))
+
+    # 打印当前目录的所有文件
+    file_name = os.listdir(retval)
+    for i in file_name:
+        print(i)
+
+    # 选择要处理的文件，同时对文件名进行修改
+    file = input("请选择要处理的文件")
+    if not os.path.isfile(file):
+        print("文件名称无效！")
+    else:
+        file_exe = ".txt"
+        partName = os.path.splitext(file)
+        fname = partName[0]
+        fextension = partName[1]
+        newFileName = fname + "_deal" + fextension
+        extension_name = os.path.splitext(newFileName)
+        extract_FileName = fname + "_extract" + fextension
+        extract_name = os.path.splitext(extract_FileName)
+        new_extension_name = extension_name[0] + file_exe
+        temp_file_name = extension_name[0] + ".temp"
+        extract_file_name = extract_name[0] + file_exe
+        cluter_FileName = fname + "_cluter" + fextension
+        cluter_name = os.path.splitext(cluter_FileName)
+        cluter_file_name = cluter_name[0] + file_exe
+
+        de_dup_FileName = fname + "_de_dup" + fextension
+        de_dup_name = os.path.splitext(de_dup_FileName)
+        de_dup_file_name = de_dup_name[0] + file_exe
+
+        cluter_id = fname + "_cluter_id" + fextension
+        cluter_id_name = os.path.splitext(cluter_id)
+        cluter_id_file = cluter_id_name[0] + file_exe
+
+
+        #打开与创建相关的打开文件、缓存与deal文件
+
+        convert_File = open(file, "r+")
+        temp_File = open(temp_file_name, "w+", newline="")
+
+        #下面的这个就是对打开文件的有多少行的函数
+        mirna_num = num_MIRNA(convert_File)
+
+        print("本文件中一个有{}个MIRNA基因".format(mirna_num))
+
+        #把在文本中的每一行定义为一个元素添加到一个列表中
+        line_list = file_list(file)
+
+        #这个是对文件中的行数进行一个计算
+        line_list_length = len(line_list)
+
+        #下面这个是对列表中的每一个元素进行一个遍历循环
+        for i in range(line_list_length):
+            #print("现在正在处理第一个{}MIRNA基因".format(i))
+            line_list_mirna = line_list[i]
+            MIRNA_STAR_5 = MIRNA_STAR_5kd(line_list_mirna)
+            MIRNA_END_5 = MIRNA_END_5kd(line_list_mirna)
+            for i in line_list:
+                id = MIRNA_id(i)
+                id_str = str(id)
+                MIRNA_star_1 = MIRNA_STAR(i)
+                MIRNA_end_1 = MIRNA_STAR(i)
+                if MIRNA_star_1 > MIRNA_STAR_5:
+                    if MIRNA_end_1 < MIRNA_END_5:
+                        temp_File.writelines(id_str)
+                        temp_File.writelines("\t")
+            temp_File.writelines("\n")
+        convert_File.close()
+        temp_File.close()
+        file_deal(temp_file_name, new_extension_name)
+        extract(new_extension_name, line_list, extract_file_name)
+        cluter(extract_file_name, cluter_file_name)
+        de_dup(cluter_file_name, de_dup_file_name)
+        cluter_id_ex(new_extension_name, line_list,  cluter_id_file)
+        print("")
+        scale = 100
+        print("".center(scale//2, "-"))
+        print("")
+        remove(temp_file_name)
+        remove(new_extension_name)
+        remove(extract_file_name)
+        remove(cluter_file_name)
+        print("")
+        scale = 100
+        print("".center(scale // 2, "-"))
+        print("")
+        note_1(de_dup_file_name)
+        note_2(cluter_id_file)
+
+main()
